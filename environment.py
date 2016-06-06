@@ -99,7 +99,7 @@ class Environment:
         y_pts = charge.get_y_pts()
         pyplot.plot(x_pts, y_pts, color=color)
 
-    def plot_charges(self, time):
+    def plot_charges(self, time, nb=False):
         """ Plots the interactions of the first three points
             added to the environment.
         """
@@ -110,8 +110,17 @@ class Environment:
         ax = pyplot.gca()
         ax.set_xlim([-5, 5])
         ax.set_ylim([-5, 5])
+        
+        # Set correct size for iPython Notebook
+        if nb:
+            plot = pyplot.gcf()
+            plot.set_size_inches((15, 10))
+
         if time == 1:
             pyplot.title("Charge Trajectories After 1 Second")
         else:
             pyplot.title("Charge Trajectories After %d Seconds" % time)
+        
+        pyplot.xlabel("X Position Over Time (micrometers)")
+        pyplot.ylabel("Y Position Over Time (micrometers)")
         pyplot.show()
