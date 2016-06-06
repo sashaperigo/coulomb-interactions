@@ -1,4 +1,5 @@
 import math
+import sys
 from constants import *
 
 class Charge:
@@ -6,10 +7,13 @@ class Charge:
         velocity, mass, and charge attributes.
     """
     def __init__(self, x_pos, y_pos, x_vel, y_vel, mass, charge):
-        self._x_pos = float(x_pos) * M_PER_MICROM
-        self._y_pos = float(y_pos) * M_PER_MICROM
-        self._x_vel = float(x_vel) * M_PER_MICROM
-        self._y_vel = float(y_vel) * M_PER_MICROM
+        if mass < 0:
+            sys.exit('Mass cannot be negative!')
+
+        self._x_pos = x_pos * M_PER_MICROM
+        self._y_pos = y_pos * M_PER_MICROM
+        self._x_vel = x_vel * M_PER_MICROM
+        self._y_vel = y_vel * M_PER_MICROM
         self._mass = mass
         self._charge = charge
         self._x_force = None
@@ -22,10 +26,11 @@ class Charge:
     def __repr__(self):
         return 'Charge(' + \
             'x_pos={0}, y_pos={1}, '.format(self._x_pos, self._y_pos) + \
-            'x_vel={2}, y_vel={3} '.format(self._x_vel, self._y_vel) + \
+            'x_vel={0}, y_vel={1} '.format(self._x_vel, self._y_vel) + \
             'mass={0}, charge={1}, '.format(self._mass, self._charge) + \
-            'x_force={2}, y_force={3}, '.format(self._x_force, self._y_force) + \
-            'x_accel={0}, y_accel={1})'.format(self._x_accel, self._y_accel)
+            'x_force={0}, y_force={1}, '.format(self._x_force, self._y_force) + \
+            'x_accel={0}, y_accel={1} '.format(self._x_accel, self._y_accel) + \
+            'x_pts=[{0}], y_pts=[{1}])'.format(self._x_pts, self._y_pts)
 
     # Interactions between charges
 
@@ -59,18 +64,18 @@ class Charge:
 
     def _repulsive(self, other):
         """ Boolean function that returns True if the two objects 
-            have charges of opposite signs and false otherwise.
+            have charges of the same sign and false otherwise.
         """
         charge_1 = self._charge
         charge_2 = other.get_charge()
-        return (charge_1 > 0 and charge_2 < 0) or (charge_1 < 0 and charge_2 > 0)
+        return (charge_1 > 0 and charge_2 > 0) or (charge_1 < 0 and charge_2 < 0)
 
     def coulomb_force(self, other):
         """ Returns the Coulomb force on this charge object 
             exerted by the second charge object.
         """
         numerator = K * self._charge * other.get_charge()
-        denominator = self.distance_between(other)
+        denominator = self.distance_between(other) ** 2
         f = math.fabs(float(numerator) / denominator)
 
         angle = self.angle_between(other)

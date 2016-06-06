@@ -1,4 +1,5 @@
 from matplotlib import pyplot
+import sys
 
 from charge import Charge
 from constants import *
@@ -7,23 +8,31 @@ class Environment:
     def __init__(self):
         self._charges = []
         self._time = 0
-        self.NUM_POINTS_TO_PLOT = 15
+        self.NUM_POINTS_TO_PLOT = 1000
         self.NUM_CHARGES_TO_PLOT = 3
         self.COLORS = ['r', 'g', 'b']
 
-    def add_proton(self, x_pos, y_pos, x_vel, y_vel):
-        """ Adds a proton with the given position
-            and velocity to the environment. 
+    def _any_overlap(self, x_pos, y_pos):
+        """ Returns True if any charge already in the environment
+            overlaps with the new charge we are trying to add.
+            False otherwise.
         """
-        proton = Charge(x_pos, y_pos, x_vel, y_vel, PROTON_WEIGHT, ELEM_CHARGE)
-        self._charges.append(proton)
+        for charge in self._charges:
+            if charge.get_x_pos() == x_pos and charge.get_y_pos() == y_pos:
+                return True
+        return False
+
+    def add_proton(self, x_pos, y_pos, x_vel, y_vel):
+        """ Adds a proton with the given position and velocity 
+            to the environment. 
+        """
+        self.add_charge(x_pos, y_pos, x_vel, y_vel, PROTON_WEIGHT, ELEM_CHARGE)
 
     def add_electron(self, x_pos, y_pos, x_vel, y_vel):
-        """ Adds an electron with the given position
-            and velocity to the environment.
+        """ Adds an electron with the given position and velocity 
+        to the environment.
         """
-        electron = Charge(x_pos, y_pos, x_vel, y_vel, ELECTRON_WEIGHT, -ELEM_CHARGE)
-        self._charges.append(electron)
+        self.add_charge(x_pos, y_pos, x_vel, y_vel, ELECTRON_WEIGHT, -ELEM_CHARGE)
 
     def add_charge(self, x_pos, y_pos, x_vel, y_vel, mass, charge):
         """ Adds a point charge with the given position,
@@ -32,6 +41,9 @@ class Environment:
             Allows the users to add charges that are not
             just protons and electrons!
         """
+        if self._any_overlap(x_pos, y_pos):
+            sys.exit('There is already a charge at ({0}, {1}). '.format(x_pos, y_pos) + \
+                     'No two points can overlap in space!')
         charge = Charge(x_pos, y_pos, x_vel, y_vel, mass, charge)
         self._charges.append(charge)
 
@@ -65,24 +77,27 @@ class Environment:
                 x = charge.get_x_pos() + charge.get_x_vel() * t + 0.5 * charge.get_x_accel() * (t ** 2)
                 y = charge.get_y_pos() + charge.get_y_vel() * t + 0.5 * charge.get_y_accel() * (t ** 2)
 
-                charge.add_x_pt(x)
-                charge.add_y_pt(y)
+                # Convert to micrometers for so our plot is prettier!
+                charge.add_x_pt(float(x) / M_PER_MICROM)
+                charge.add_y_pt(float(y) / M_PER_MICROM)
 
             # Update the current x and y positions of the charges.
             # It's important that we do this in a separate loop, 
             # so that we don't mess up the initial calculations!
             for charge in self._charges:
-                charge.set_x_pos(charge.get_x_pts()[-1])
-                charge.set_y_pos(charge.get_y_pts()[-1])
+                new_x = charge.get_x_pts()[-1]
+                new_y = charge.get_y_pts()[-1]
+
+                # Convert back to meters
+                charge.set_x_pos(new_x * M_PER_MICROM)
+                charge.set_y_pos(new_y * M_PER_MICROM)
 
     def _plot_trajectory(self, charge, color):
         """ Plots the trajectory of one point charge.
         """
-        x_pts = charge.get_y_pts()
+        x_pts = charge.get_x_pts()
         y_pts = charge.get_y_pts()
-        print x_pts
-        print y_pts
-        pyplot.plot(x_pts, y_pts, color=color, marker='o')
+        pyplot.plot(x_pts, y_pts, color=color)
 
     def plot_charges(self, time):
         """ Plots the interactions of the first three points
@@ -91,6 +106,10 @@ class Environment:
         self._get_points(time)
         for i in range(0, self.NUM_CHARGES_TO_PLOT):
             self._plot_trajectory(self._charges[i], self.COLORS[i])
+
+        ax = pyplot.gca()
+        ax.set_xlim([-5, 5])
+        ax.set_ylim([-5, 5])
         if time == 1:
             pyplot.title("Charge Trajectories After 1 Second")
         else:
